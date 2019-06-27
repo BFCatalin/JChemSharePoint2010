@@ -19,7 +19,8 @@ namespace EmptyStructureFinder
                 LibraryChecker checker = new LibraryChecker();
                 if (File.Exists(args[0]))
                 {
-
+                    var webUrls = File.ReadAllLines(args[0]);
+                    checker.Check(webUrls);
                 }
                 else
                 {
