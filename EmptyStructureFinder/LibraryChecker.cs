@@ -141,7 +141,7 @@ namespace EmptyStructureFinder
                     fieldContentDocument.LoadHtml(fieldContent);
 
                     HtmlNodeCollection structureHtmlNodesWithIdOrURL =
-                        fieldContentDocument.DocumentNode.SelectNodes("//img[contains(@src,'/_vti_bin/JChem/CxnWebGet.svc/GetStructureImageFromSession') or contains(@src,'/_vti_bin/JChem/CxnWebGet.svc/GetErrorImage')]");
+                        fieldContentDocument.DocumentNode.SelectNodes("//img[contains(@src,'/_vti_bin/JChem/CxnWebGet.svc/GetStructureImageFromSession')]");
                     if (structureHtmlNodesWithIdOrURL != null)
                     {
                         ConsoleEx.WriteLine(ConsoleColor.DarkRed, "\tEmpty structure found in '{0}/{1}/{2}'", web.Title, list.Title, listItem.Name);
