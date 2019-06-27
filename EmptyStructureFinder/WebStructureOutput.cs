@@ -15,6 +15,7 @@ namespace EmptyStructureFinder
         private HashSet<string> _entries;
         private ZipOutputStream _zipStream;
         private readonly ZipEntryFactory _entryFactory;
+        private bool _hasData;
 
         public WebStructureOutput(string webTitle, bool createWebFolder = false)
         {
@@ -24,6 +25,8 @@ namespace EmptyStructureFinder
             _entries = new HashSet<string>();
             _entryFactory = new ZipEntryFactory();
             _zipStream = new ZipOutputStream(_memoryStream);
+            _zipStream.IsStreamOwner = false;
+            _hasData = false;
         }
 
         public void AddWeb()
@@ -51,23 +54,26 @@ namespace EmptyStructureFinder
                 _zipStream.PutNextEntry(fileEntry);
                 _zipStream.Write(structureImage, 0, structureImage.Length);
                 _zipStream.CloseEntry();
+                _hasData = true;
             }
         }
 
         public void Save()
         {
-            _zipStream.IsStreamOwner = false;
-            _zipStream.Close();
-            _zipStream.Dispose();
-            _memoryStream.Position = 0;
-            using (var fs = new FileStream(_webTitle + ".zip", FileMode.Create))
+            if (_hasData)
             {
-                byte[] buffer = new byte[16 * 1024];
-                int bytesRead;
-
-                while ((bytesRead = _memoryStream.Read(buffer, 0, buffer.Length)) > 0)
+                _zipStream.Close();
+                _zipStream.Dispose();
+                _memoryStream.Position = 0;
+                using (var fs = new FileStream(_webTitle + ".zip", FileMode.Create))
                 {
-                    fs.Write(buffer, 0, bytesRead);
+                    byte[] buffer = new byte[16 * 1024];
+                    int bytesRead;
+
+                    while ((bytesRead = _memoryStream.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        fs.Write(buffer, 0, bytesRead);
+                    }
                 }
             }
         }
@@ -84,7 +90,8 @@ namespace EmptyStructureFinder
 
         public void Dispose()
         {
-
+            _memoryStream.Close();
+            _memoryStream.Dispose();
         }
     }
 }

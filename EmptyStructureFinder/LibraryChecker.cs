@@ -22,28 +22,44 @@ namespace EmptyStructureFinder
         {
             using (var site = new SPSite(url))
             {
-                using (var web = site.OpenWeb())
+                ChekWeb(site.RootWeb);
+                foreach (SPWeb web in site.RootWeb.Webs)
                 {
-                    WebStructureOutput webZipOutput = new WebStructureOutput(web.Title);
-                    foreach (SPList list in web.Lists)
+                    try
                     {
-                        if (list.Fields.ContainsField("JChemMetaField"))
-                        {
-                            ConsoleEx.WriteLine(string.Format("Checking '{0}' for empty structures...", list.Title));
-                            ConsoleEx.WriteLine("\tJChem structures field found.");
-                            
-                            bool runCompleteFieldCheck;
-                            var metaData = CheckMetaFieldReferences(web, list, webZipOutput, out runCompleteFieldCheck);
-
-                            if (runCompleteFieldCheck)
-                            {
-                                RunCheckOnAllFields(web, list, metaData, webZipOutput);
-                            }
-                        }
-
+                        ChekWeb(web);
                     }
-                    webZipOutput.Save();
+                    catch (Exception ex)
+                    {
+                        ConsoleEx.WriteLine(ConsoleColor.Red, "Error while checking web '{0}': {1}", web.Url, ex.Message);
+                    }
                 }
+            }
+        }
+
+        private void ChekWeb(SPWeb web)
+        {
+            ConsoleEx.WriteLine(ConsoleColor.Green, "Checking '{0}'", web.Title);
+            using (WebStructureOutput webZipOutput = new WebStructureOutput(web.Title))
+            {
+                foreach (SPList list in web.Lists)
+                {
+                    if (list.Fields.ContainsField("JChemMetaField"))
+                    {
+                        ConsoleEx.WriteLine(string.Format("Checking '{0}' for empty structures...", list.Title));
+                        ConsoleEx.WriteLine("\tJChem structures field found.");
+
+                        bool runCompleteFieldCheck;
+                        var metaData = CheckMetaFieldReferences(web, list, webZipOutput, out runCompleteFieldCheck);
+
+                        if (runCompleteFieldCheck)
+                        {
+                            RunCheckOnAllFields(web, list, metaData, webZipOutput);
+                        }
+                    }
+
+                }
+                webZipOutput.Save();
             }
         }
 
@@ -134,22 +150,22 @@ namespace EmptyStructureFinder
                             var structures = JChemMetaFieldDataProvider.GetStructures(entry.Value[FieldPropertyCollector.SructuresProperty]);
                             foreach (var structure in structures)
                             {
-                                if(!structure.StructureString.StartsWith("error", StringComparison.InvariantCultureIgnoreCase))
-                                try
-                                {
-                                    var image = client.GetStructureImage(structure.StructureString, structure.Format.ToString(), 200, 200, false);
-                                    using (var imageStream = new MemoryStream())
+                                if (!structure.StructureString.StartsWith("error", StringComparison.InvariantCultureIgnoreCase))
+                                    try
                                     {
-                                        image.Save(imageStream, System.Drawing.Imaging.ImageFormat.Png);
-                                        imageStream.Position = 0;
-                                        webZipOutput.AddStructure(list.Title, listItem.Name, listItem.ID, structure.Id.ToString(), imageStream.ToArray());
+                                        var image = client.GetStructureImage(structure.StructureString, structure.Format.ToString(), 200, 200, false);
+                                        using (var imageStream = new MemoryStream())
+                                        {
+                                            image.Save(imageStream, System.Drawing.Imaging.ImageFormat.Png);
+                                            imageStream.Position = 0;
+                                            webZipOutput.AddStructure(list.Title, listItem.Name, listItem.ID, structure.Id.ToString(), imageStream.ToArray());
+                                        }
                                     }
-                                }
-                                catch (Exception ex)
-                                {
-                                    ConsoleEx.WriteLine(ConsoleColor.Red, "\tCannot render structure: {0}", ex.Message);
-                                    Environment.Exit(1);
-                                }
+                                    catch (Exception ex)
+                                    {
+                                        ConsoleEx.WriteLine(ConsoleColor.Red, "\tCannot render structure: {0}", ex.Message);
+                                        Environment.Exit(1);
+                                    }
                             }
                         }
                     }
