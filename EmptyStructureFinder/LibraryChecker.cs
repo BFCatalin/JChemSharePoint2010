@@ -22,9 +22,11 @@ namespace EmptyStructureFinder
         {
             using (var site = new SPSite(url))
             {
-                ChekWeb(site.RootWeb);
-                foreach (SPWeb web in site.RootWeb.Webs)
+                Queue<SPWeb> webs = new Queue<SPWeb>();
+                webs.Enqueue(site.RootWeb);
+                while(webs.Count > 0)
                 {
+                    var web = webs.Dequeue();
                     try
                     {
                         ChekWeb(web);
@@ -32,6 +34,17 @@ namespace EmptyStructureFinder
                     catch (Exception ex)
                     {
                         ConsoleEx.WriteLine(ConsoleColor.Red, "Error while checking web '{0}': {1}", web.Url, ex.Message);
+                    }
+                    try
+                    {
+                        foreach (SPWeb subWeb in web.Webs)
+                        {
+                            webs.Enqueue(subWeb);
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        ConsoleEx.WriteLine(ConsoleColor.Red, "Error while exploring web '{0}': {1}", web.Url, ex.Message);
                     }
                 }
             }
